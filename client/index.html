@@ -2,11 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Simple Chat App</title>
+<title>Chat Room</title>
 </head>
 <body>
-<h2>Simple Chat Application</h2>
-<div id="chat"></div>
+<h2>Chat Room</h2>
 Username: <input type="text" id="username"><br>
 Room: <input type="text" id="room"><br>
 Message: <input type="text" id="message">
@@ -18,17 +17,22 @@ const ws = new WebSocket("ws://localhost:8765");
 const chat = document.getElementById("chat");
 
 ws.onmessage = function(event) {
+    console.log(event.data);
     chat.innerHTML += `<p>${event.data}</p>`;
 };
 
 function sendMessage() {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+        alert('WebSocket not connected.');
+        return;
+    }
     const msg = {
         username: document.getElementById("username").value,
         room: document.getElementById("room").value,
         message: document.getElementById("message").value
     };
     ws.send(JSON.stringify(msg));
-    document.getElementById("message").value = "";  // Clear message input
+    document.getElementById("message").value = "";  // Clear message input after sending
 }
 </script>
 </body>

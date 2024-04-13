@@ -2,11 +2,10 @@ import asyncio
 import websockets
 import json
 
-clients = {}  # Dictionary to track connections
-rooms = {}  # Dictionary to manage rooms and their members
+clients = {}  # Maps connections to user details
+rooms = {}  # Maps room names to members and messages
 
 async def register_client(websocket, path):
-    # Wait for the client to send their username and desired room
     try:
         async for message in websocket:
             data = json.loads(message)
@@ -14,14 +13,18 @@ async def register_client(websocket, path):
             room = data['room']
             clients[websocket] = {'username': username, 'room': room}
 
-            # Add client to the specified room
-            if room in rooms:
-                rooms[room].add(websocket)
-            else:
-                rooms[room] = {websocket}
+            # Initialize room if new, otherwise add client to room
+            if room not in rooms:
+                rooms[room] = {'members': set(), 'messages': []}
+            rooms[room]['members'].add(websocket)
+
+            # Send existing messages in the room to the new user
+            for msg in rooms[room]['messages']:
+                await websocket.send(msg)
 
             # Notify room of new user
-            await broadcast(room, f"{username} has joined the chat!")
+            join_message = f"{username} has joined the chat!"
+            await broadcast(room, join_message)
 
             # Handle subsequent messages
             await handle_messages(websocket, room)
@@ -32,20 +35,25 @@ async def register_client(websocket, path):
 async def handle_messages(websocket, room):
     async for message in websocket:
         data = json.loads(message)
-        await broadcast(room, f"{clients[websocket]['username']}: {data['message']}")
+        formatted_message = f"{clients[websocket]['username']}: {data['message']}"
+        # Save message to room history
+        rooms[room]['messages'].append(formatted_message)
+        await broadcast(room, formatted_message)
 
 async def broadcast(room, message):
-    for client in rooms[room]:
+    for client in rooms[room]['members']:
         await client.send(message)
 
 async def unregister_client(websocket):
     room = clients[websocket]['room']
     username = clients[websocket]['username']
-    rooms[room].remove(websocket)
-    if not rooms[room]:  # Delete room if empty
+    rooms[room]['members'].remove(websocket)
+    if not rooms[room]['members']:  # Optionally clear history when room is empty
         del rooms[room]
+    else:
+        leave_message = f"{username} has left the chat."
+        await broadcast(room, leave_message)
     del clients[websocket]
-    await broadcast(room, f"{username} has left the chat.")
 
 ###start_server = websockets.serve(register_client, "localhost", 8765)
 
