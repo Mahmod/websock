@@ -7,30 +7,28 @@
 <body>
 <h2>Simple Chat Application</h2>
 <div id="chat"></div>
-<input type="text" id="username" placeholder="Enter your name">
-<input type="text" id="message" placeholder="Type a message...">
+Username: <input type="text" id="username"><br>
+Room: <input type="text" id="room"><br>
+Message: <input type="text" id="message">
 <button onclick="sendMessage()">Send</button>
+<div id="chat"></div>
 
 <script>
-const chat = document.getElementById("chat");
-const username = document.getElementById("username");
-const message = document.getElementById("message");
-
 const ws = new WebSocket("ws://localhost:8765");
+const chat = document.getElementById("chat");
 
 ws.onmessage = function(event) {
-    const data = JSON.parse(event.data);
-    chat.innerHTML += `<p><strong>${data.username}:</strong> ${data.message}</p>`;
+    chat.innerHTML += `<p>${event.data}</p>`;
 };
 
 function sendMessage() {
     const msg = {
-        username: username.value,
-        message: message.value
+        username: document.getElementById("username").value,
+        room: document.getElementById("room").value,
+        message: document.getElementById("message").value
     };
     ws.send(JSON.stringify(msg));
-    message.value = "";  // clear message input after sending
-    //username.value = ""; // clear username input after sending
+    document.getElementById("message").value = "";  // Clear message input
 }
 </script>
 </body>
