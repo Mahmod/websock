@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Simple Chat App</title>
+</head>
+<body>
+<h2>Simple Chat Application</h2>
+<div id="chat"></div>
+<input type="text" id="username" placeholder="Enter your name">
+<input type="text" id="message" placeholder="Type a message...">
+<button onclick="sendMessage()">Send</button>
+
+<script>
+const chat = document.getElementById("chat");
+const username = document.getElementById("username");
+const message = document.getElementById("message");
+
+const ws = new WebSocket("ws://localhost:8765");
+
+ws.onmessage = function(event) {
+    const data = JSON.parse(event.data);
+    chat.innerHTML += `<p><strong>${data.username}:</strong> ${data.message}</p>`;
+};
+
+function sendMessage() {
+    const msg = {
+        username: username.value,
+        message: message.value
+    };
+    ws.send(JSON.stringify(msg));
+    message.value = "";  // clear message input after sending
+    //username.value = ""; // clear username input after sending
+}
+</script>
+</body>
+</html>
